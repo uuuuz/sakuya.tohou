@@ -1,0 +1,129 @@
+UserTbOperate uto = new UserTbOperate();
+	TestTbOperate testto = new TestTbOperate();
+	TypeTbOperate typeto = new TypeTbOperate();
+	GradeTbOperate gto = new GradeTbOperate();
+	UserStudent us = new UserStudent();
+	UserManager um = UserManager.getUserManager();
+	//Scanner sc = new Scanner(System.in);
+	
+	/**
+	 * 用于与客户端进行交互的输出输入流
+	 */
+	ObjectInputStream ois = null;
+	ObjectOutputStream oos = null;
+	ObjectInputStream ois1 = null;
+	ObjectOutputStream oos1 = null;
+	HashMap<String,Object> send_map = null;
+	HashMap<String,Object> rece_map = null;
+	
+	UserTable ut = null;
+	GradeTable gt = null;
+	TypeTable typeT = null;
+	TestTable testT = null;
+	
+	Socket s = null;
+	public UserServer(Socket s) {
+		
+		this.s = s;
+	}
+	/**
+	 *
+	 */
+	@Override
+	public void run() {
+		
+		try {
+			System.out.println("开始执行...");
+			/**
+			 * 打开I/O流
+			 */
+			ois = new ObjectInputStream(s.getInputStream());
+			oos = new ObjectOutputStream(s.getOutputStream());
+			send_map = new HashMap<String,Object>();
+			rece_map = new HashMap<String,Object>();
+			
+			/**
+			 * 登陆界面的操作 登陆成功后 则进行数据的操作
+			 */
+			mainUi(); 
+			
+			System.out.println("客户端"+s.getInetAddress()+"已断开连接");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch(Exception e){
+			e.printStackTrace();
+		} finally {
+			/**
+			 * 关闭流 和socket
+			 */
+			try {
+				ois.close();
+				oos.close();
+				s.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+	}
+	/**
+	 * 控制接受指令的方法
+	 * @param key
+	 * @return
+	 * @throws ClassNotFoundException
+	 * @throws IOException
+	 */
+	@SuppressWarnings({ "unchecked", "unused" })
+	private Object rece(Object key) throws ClassNotFoundException, IOException {
+		//ois = ois1;
+		rece_map = (HashMap<String, Object>) ois.readObject();
+		//ois.reset();
+		//ois.close();
+		//ois = ois1;
+		return rece_map.get(key+"");
+	}
+	/**
+	 * 控制传出反馈的方法
+	 * @param send_map
+	 * @throws IOException
+	 */
+	@SuppressWarnings("unused")
+	private void send(HashMap<String,Object> send_map) throws IOException {
+		//oos = oos1;
+		oos.writeObject(send_map);
+		oos.flush();
+		/**
+		 * 重置将丢弃已写入流中的所有对象的状态
+		 * 重新设置状态，使其与新的 ObjectOutputStream 相同
+		 * 将流中的当前点标记为 reset，相应的 ObjectInputStream 也将在这一点重置
+		 * 以前写入流中的对象不再被视为正位于流中  
+		 */
+		oos.reset();
+		//oos.close();
+		//oos = oos1;
+	}
+	/**
+	 * 合并send 与rece 为一个方法 接受指令 并反馈   合并可以 但是 不建议  因为 有很多时候 需要 获得指令后 返回操作后的数据
+	 * @param str  race_map 通过该参数值 获取 相对应的指令
+	 * @param o   send_map  通过 str 参数值 向客户端反馈发送 该参数值
+	 * @return  返回获得的 指令 值
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 */
+	@SuppressWarnings("unused")
+	private Object sendAndRece(String str, Object o) throws ClassNotFoundException, IOException {
+		Object obj = (Integer)rece(str);
+		send_map.put(str, o);
+		send(send_map);
+		return obj;
+	}
+	/*private Object sendAndRece(String str, Object o) throws IOException, ClassNotFoundException {
+		send_map.put(str, o);
+		send(send_map);
+		return rece(str);
+	}
